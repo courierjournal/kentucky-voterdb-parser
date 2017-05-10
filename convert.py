@@ -88,20 +88,22 @@ fieldNames = (
 	"H_YR5_GENERAL",
 	)
 
-#String formatter to clean up some of the fields
-def formatString(label, line):
-  if label == "ZIP_RESIDENCE" or label == "ZIP_MAILING" and line != "":
-    return line[0:5]
-  elif label == "DOB" or label == "REGISTRATION_DATE" and line != "":
-  	#XXX: dates are sometimes (likely incorrectly) <1900 which causes datetime to choke
-  	#for now we'll just statically format dates, deal with them as outliers in the model
-  	day = line[2:4]
-  	month = line[0:2]
-  	year = line[4:8]
+#String formatter function to clean up some of the fields
+def formatString(label, field):
+  #Use 5 digit zips, discard ones that are malformed (non numeric)
+  if label == "ZIP_RESIDENCE" or label == "ZIP_MAILING" and field != "":
+    if field.isdigit():
+      return field[0:5]
+    else:
+      return ""
+  #Format date to YYYY-MM-DD
+  elif label == "DOB" or label == "REGISTRATION_DATE" and field != "":
+  	day = field[2:4]
+  	month = field[0:2]
+  	year = field[4:8]
   	return year + "-" + month + "-" + day
-    #return datetime.strptime(line, '%m%d%Y').strftime('%Y-%m-%d')
   else:
-    return line
+    return field
 
 
 #Open output and write the header
@@ -109,13 +111,13 @@ outputFile = open('output.csv', 'w')
 writer = csv.writer(outputFile, dialect = 'excel')
 writer.writerow(fieldNames)
 
-#Loop through the file and parse each line
+#Loop through the file and parse each line writing to output.csv
 i=0
 with codecs.open(filename, 'r', 'utf-8') as f:
   for line in f:
     lineOut = []
     for index, field in enumerate(fieldWidths):
-      newField = line[field[0]-1:field[1]].encode('utf-8').strip()
+      newField = line[field[0]-1:field[1]].encode('utf-8').strip().upper()
       lineOut.append(formatString(fieldNames[index], newField))
     writer.writerow(lineOut)
     i+=1
